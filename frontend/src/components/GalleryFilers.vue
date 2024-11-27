@@ -39,7 +39,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, defineEmits, onBeforeUnmount } from "vue";
-import axios from "axios";
+import api from "../api";
 
 // Reactive states
 const categories = ref<string[]>([]); // List of categories
@@ -53,7 +53,7 @@ const emit = defineEmits(["filterChanged"]);
 // Fetch categories from backend
 const fetchCategories = async () => {
   try {
-    const response = await axios.get("http://localhost:5002/api/images/filter");
+    const response = await api.get('images/filter');
     categories.value = response.data.tags;
   } catch (error) {
     console.error("Error fetching categories:", error);

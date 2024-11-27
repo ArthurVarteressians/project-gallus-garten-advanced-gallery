@@ -12,21 +12,26 @@
       <SkeletonLoader v-if="loading" :count="9" />
 
       <!-- Image Grid -->
-      <div v-else class="grid grid-cols-2 max-sm:grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-4">
+      <div
+        v-else
+        class="grid grid-cols-2 max-sm:grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-1"
+      >
         <div
           v-for="image in images"
           :key="image.publicId"
-          class="relative group w-full h-[25vh] max-sm:h-[16vh] sm:h-[20vh] md:h-[25vh] rounded-lg overflow-hidden bg-gray-300"
+          class="relative group w-full h-[25vh] max-sm:h-[15vh] sm:h-[22vh] md:h-[26vh] overflow-hidden bg-gray-300"
         >
+          <!-- Image -->
           <img
             :src="image.url"
             :alt="image.description"
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
           />
+
           <!-- Overlay -->
           <div
-            class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white text-sm font-bold"
+            class="absolute bottom-0 w-full h-[30%] bg-black bg-opacity-60 opacity-0 sm:opacity-0 sm:group-hover:opacity-90 transition-opacity duration-300 flex items-center justify-center text-white font-light"
           >
             {{ image.description }}
           </div>
@@ -51,7 +56,7 @@
 import GalleryFilter from "./GalleryFilers.vue";
 import SkeletonLoader from "./SkeletonLoader.vue";
 import { ref, onMounted } from "vue";
-import axios from "axios";
+import api from "../api";
 
 // Define the Image interface
 interface Image {
@@ -86,7 +91,7 @@ const loadImages = async (tag: string | null = null, reset = false) => {
       page.value = 1; // Reset page
     }
 
-    const response = await axios.get("http://localhost:5002/api/images", {
+    const response = await api.get("/images", {
       params: { page: page.value, tag },
     });
 
