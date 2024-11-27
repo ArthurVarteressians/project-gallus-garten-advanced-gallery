@@ -28,6 +28,7 @@
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
           />
+          <LikeIcon :initialLikes="image.likes" :imageId="image.publicId" />
 
           <!-- Overlay -->
           <div
@@ -55,6 +56,7 @@
 <script lang="ts" setup>
 import GalleryFilter from "./GalleryFilers.vue";
 import SkeletonLoader from "./SkeletonLoader.vue";
+import LikeIcon from './LikeIcon.vue'; // Import the LikeIcon component
 import { ref, onMounted } from "vue";
 import api from "../api";
 
@@ -63,6 +65,7 @@ interface Image {
   publicId: string;
   url: string;
   description: string;
+  likes: number; // Add the likes property
 }
 
 // Reactive variables

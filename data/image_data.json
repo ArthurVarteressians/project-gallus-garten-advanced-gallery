@@ -31,7 +31,7 @@
     "publicId": "GG_2",
     "format": "jpeg",
     "views": 150,
-    "likes": 30,
+    "likes": 60,
     "isFeatured": false,
     "isPublic": true,
     "categories": [
@@ -51,7 +51,7 @@
     "publicId": "GG_3",
     "format": "jpeg",
     "views": 200,
-    "likes": 50,
+    "likes": 10,
     "isFeatured": true,
     "isPublic": true,
     "categories": [
@@ -71,7 +71,7 @@
     "publicId": "GG_4",
     "format": "jpeg",
     "views": 175,
-    "likes": 40,
+    "likes": 100,
     "isFeatured": true,
     "isPublic": true,
     "categories": [
