@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import GallerymainLayout from "./components/GallerymainLayout.vue";
+import GalleryPage from "./components/GalleryPage.vue";
 </script>
 
 <template>
-  <GallerymainLayout />
+  <GalleryPage />
 </template>

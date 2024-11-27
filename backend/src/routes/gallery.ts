@@ -17,23 +17,30 @@ fs.readFile(imagesFilePath, 'utf-8', (err, data) => {
   }
 });
 
-// Route to get paginated images
+// Route to get paginated and filtered images
 router.get('/', (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
-  const imagesPerPage = 22; // Can change image count here
+  const tag = req.query.tag as string | undefined;
+  const imagesPerPage = 22; // Adjust the number of images per page as needed
 
-  // Calculate the start and end indices for pagination
+  // Filter images by tag if a tag is provided
+  let filteredImages = imagesData;
+  if (tag) {
+    filteredImages = imagesData.filter(image => image.tags.includes(tag));
+  }
+
+  // Calculate pagination
   const startIndex = (page - 1) * imagesPerPage;
   const endIndex = startIndex + imagesPerPage;
 
-  const paginatedImages = imagesData.slice(startIndex, endIndex);
+  const paginatedImages = filteredImages.slice(startIndex, endIndex);
 
-  // Send paginated images and total count to the client
+  // Send paginated images, total count, and pagination info
   res.json({
     images: paginatedImages,
     currentPage: page,
-    totalImages: imagesData.length,
-    hasMore: endIndex < imagesData.length
+    totalImages: filteredImages.length,
+    hasMore: endIndex < filteredImages.length,
   });
 });
 
