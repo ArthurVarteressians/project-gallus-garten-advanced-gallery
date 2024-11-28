@@ -28,13 +28,20 @@
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
           />
-          <LikeIcon :initialLikes="image.likes" :imageId="image.publicId" />
 
           <!-- Overlay -->
           <div
-            class="absolute bottom-0 w-full h-[30%] bg-black bg-opacity-60 opacity-0 sm:opacity-0 sm:group-hover:opacity-90 transition-opacity duration-300 flex items-center justify-center text-white font-light"
+            class="absolute bottom-0 left-0 w-full h-[30%] bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white"
           >
-            {{ image.description }}
+            <!-- Description -->
+            <p class="text-sm font-medium text-center">{{ image.description }}</p>
+          </div>
+
+          <!-- Like Icon -->
+          <div
+            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          >
+            <LikeIcon :initialLikes="image.likes" :imageId="image.publicId" />
           </div>
         </div>
       </div>
@@ -65,7 +72,7 @@ interface Image {
   publicId: string;
   url: string;
   description: string;
-  likes: number; // Add the likes property
+  likes: number; // Ensure likes property exists
 }
 
 // Reactive variables
@@ -145,3 +152,7 @@ onMounted(() => {
   galleryContainer.value?.addEventListener("scroll", handleScroll); // Add scroll listener
 });
 </script>
+
+<style scoped>
+/* Add any additional custom styles if needed */
+</style>
