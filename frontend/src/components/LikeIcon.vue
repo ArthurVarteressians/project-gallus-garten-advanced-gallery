@@ -43,13 +43,9 @@
   </div>
 </template>
 
-
-
-
-
 <script lang="ts" setup>
-import { ref, computed, defineProps } from 'vue';
-import api from '../api'; // Centralized API instance
+import { ref, computed, defineProps } from "vue";
+import api from "../api"; // Centralized API instance
 
 // Destructure props directly from defineProps
 const props = defineProps({
@@ -68,9 +64,9 @@ const currentLikes = ref(props.initialLikes);
 
 // Compute leaf color dynamically based on likes
 const leafColor = computed(() => {
-  if (currentLikes.value < 50) return '#80D25B'; // Light green
-  if (currentLikes.value >= 50 && currentLikes.value <= 100) return '#22BA8E'; // Medium green
-  return '#0F7A4A'; // Dark green
+  if (currentLikes.value < 50) return "#80D25B"; // Light green
+  if (currentLikes.value >= 50 && currentLikes.value <= 100) return "#22BA8E"; // Medium green
+  return "#0F7A4A"; // Dark green
 });
 
 // Handle the click to increment likes
@@ -80,12 +76,10 @@ const incrementLikes = async () => {
     const response = await api.post(`/likes/${props.imageId}/like`);
     currentLikes.value = response.data.likes; // Update likes count dynamically
   } catch (error) {
-    console.error('Error incrementing likes:', error);
+    console.error("Error incrementing likes:", error);
   }
 };
 </script>
 
-
 <style scoped>
-/* Add scoped styles if needed */
 </style>

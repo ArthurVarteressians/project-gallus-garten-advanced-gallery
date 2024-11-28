@@ -17,29 +17,31 @@
         class="grid grid-cols-2 max-sm:grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-1"
       >
         <div
-          v-for="image in images"
+          v-for="(image, index) in images"
           :key="image.publicId"
           class="relative group w-full h-[25vh] max-sm:h-[15vh] sm:h-[22vh] md:h-[26vh] overflow-hidden bg-gray-300"
+          @click="openImage(index)"
         >
           <!-- Image -->
           <img
             :src="image.url"
             :alt="image.description"
-            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 hover-active"
             loading="lazy"
           />
 
           <!-- Overlay -->
           <div
-            class="absolute bottom-0 left-0 w-full h-[30%] bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white"
+            class="absolute bottom-0 left-0 w-full h-[30%] bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white hidden-hover"
           >
-            <!-- Description -->
-            <p class="text-sm font-medium text-center">{{ image.description }}</p>
+            <p class="text-sm font-medium text-center">
+              {{ image.description }}
+            </p>
           </div>
 
           <!-- Like Icon -->
           <div
-            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden-hover"
           >
             <LikeIcon :initialLikes="image.likes" :imageId="image.publicId" />
           </div>
@@ -57,13 +59,26 @@
         No more images to load
       </div>
     </main>
+
+    <!-- Image Modal -->
+    <ImageModal
+      v-if="selectedImage !== null"
+      :isOpen="selectedImage !== null"
+      :image="images[selectedImage]"
+      :hasPrevious="selectedImage > 0"
+      :hasNext="selectedImage < images.length - 1"
+      @close="closeImage"
+      @next="goToNext"
+      @previous="goToPrevious"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import GalleryFilter from "./GalleryFilers.vue";
 import SkeletonLoader from "./SkeletonLoader.vue";
-import LikeIcon from './LikeIcon.vue'; // Import the LikeIcon component
+import LikeIcon from "./LikeIcon.vue";
+import ImageModal from "./ImageModal.vue"; // Import the new modal component
 import { ref, onMounted } from "vue";
 import api from "../api";
 
@@ -72,17 +87,29 @@ interface Image {
   publicId: string;
   url: string;
   description: string;
-  likes: number; // Ensure likes property exists
+  likes: number;
+  views: number; // Ensure this is included
 }
 
 // Reactive variables
-const images = ref<Image[]>([]); // Stores the loaded images
-const loading = ref(false); // Loading state
+const images = ref<Image[]>([]);
+const loading = ref(false);
 const page = ref(1);
-const allDataLoaded = ref(false); // Whether all images are loaded
-const galleryContainer = ref<HTMLElement | null>(null); // Ref for the scrollable container
-const error = ref(false); // Error state
-const selectedTag = ref<string | null>(null); // Currently selected tag for filtering
+const allDataLoaded = ref(false);
+const galleryContainer = ref<HTMLElement | null>(null);
+const error = ref(false);
+const selectedTag = ref<string | null>(null);
+
+// Modal logic
+const selectedImage = ref<number | null>(null);
+
+const openImage = (index: number) => {
+  selectedImage.value = index; // Open the modal with the clicked image
+};
+
+const closeImage = () => {
+  selectedImage.value = null; // Close the modal
+};
 
 const loadImages = async (tag: string | null = null, reset = false) => {
   if (loading.value || allDataLoaded.value) return;
@@ -91,14 +118,12 @@ const loadImages = async (tag: string | null = null, reset = false) => {
   error.value = false;
 
   const container = galleryContainer.value;
-
-  // Save the current scroll position
   const currentScroll = container?.scrollTop || 0;
 
   try {
     if (reset) {
-      images.value = []; // Clear images if resetting
-      page.value = 1; // Reset page
+      images.value = [];
+      page.value = 1;
     }
 
     const response = await api.get("/images", {
@@ -106,11 +131,11 @@ const loadImages = async (tag: string | null = null, reset = false) => {
     });
 
     if (response.data.images && response.data.images.length > 0) {
-      images.value.push(...response.data.images); // Append fetched images
-      page.value++; // Increment page
-      allDataLoaded.value = !response.data.hasMore; // Check if more data is available
+      images.value.push(...response.data.images);
+      page.value++;
+      allDataLoaded.value = !response.data.hasMore;
     } else {
-      allDataLoaded.value = true; // Mark all data as loaded
+      allDataLoaded.value = true;
     }
   } catch (err) {
     console.error("Error loading images:", err);
@@ -118,7 +143,6 @@ const loadImages = async (tag: string | null = null, reset = false) => {
   } finally {
     loading.value = false;
 
-    // Use requestAnimationFrame to restore scroll position after DOM updates
     if (container) {
       requestAnimationFrame(() => {
         container.scrollTop = currentScroll;
@@ -128,31 +152,53 @@ const loadImages = async (tag: string | null = null, reset = false) => {
 };
 
 const updateFilter = (tag: string | null) => {
-  if (selectedTag.value === tag) return; // Skip if the same tag is selected
+  if (selectedTag.value === tag) return;
 
-  selectedTag.value = tag; // Update the selected tag
-  allDataLoaded.value = false; // Reset "all loaded" state
-  loadImages(tag, true); // Reset images and fetch new data
+  selectedTag.value = tag;
+  allDataLoaded.value = false;
+  loadImages(tag, true);
 };
 
-// Infinite scrolling
 const handleScroll = () => {
   const container = galleryContainer.value;
   if (
     container &&
     container.scrollTop + container.clientHeight >= container.scrollHeight - 10
   ) {
-    loadImages(selectedTag.value); // Load more images for the current tag
+    loadImages(selectedTag.value);
   }
 };
 
-// Initialize component
+const goToNext = () => {
+  if (
+    selectedImage.value !== null &&
+    selectedImage.value < images.value.length - 1
+  ) {
+    selectedImage.value++;
+  }
+};
+
+const goToPrevious = () => {
+  if (selectedImage.value !== null && selectedImage.value > 0) {
+    selectedImage.value--;
+  }
+};
+
 onMounted(() => {
-  loadImages(); // Load all images by default
-  galleryContainer.value?.addEventListener("scroll", handleScroll); // Add scroll listener
+  loadImages();
+  galleryContainer.value?.addEventListener("scroll", handleScroll);
 });
 </script>
 
 <style scoped>
-/* Add any additional custom styles if needed */
+/* Disable hover for mobile using media queries */
+@media (max-width: 640px) {
+  .hidden-hover {
+    display: none !important; /* Disable hover effects for smaller screens */
+  }
+
+  .hover-active {
+    transform: none !important;
+  }
+}
 </style>
