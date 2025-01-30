@@ -2,8 +2,8 @@ import nano from "nano";
 
 // CouchDB credentials
 const username = "admin";
-const password = "****";
-const serverIp = "****";
+const password = "newpassword";
+const serverIp = "89.250.70.201";
 const port = "5984";
 
 // Database URL

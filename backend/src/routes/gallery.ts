@@ -1,47 +1,44 @@
 import express, { Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
+import { useDatabase } from "../../Database/couchdb";
 
 const router = express.Router();
-
-// Load images data from JSON file
-const imagesFilePath = path.resolve(__dirname, '../../../data/image_data.json');
-let imagesData: any[] = [];
-
-// Load data from JSON file once at server startup
-fs.readFile(imagesFilePath, 'utf-8', (err, data) => {
-  if (err) {
-    console.error('Error reading images data:', err);
-  } else {
-    imagesData = JSON.parse(data);
-  }
-});
+const dbName = "testart"; // CouchDB database name
+const db = useDatabase(dbName);
 
 // Route to get paginated and filtered images
-router.get('/', (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const tag = req.query.tag as string | undefined;
-  const imagesPerPage = 22; // Adjust the number of images per page as needed
+  const imagesPerPage = 22; 
 
-  // Filter images by tag if a tag is provided
-  let filteredImages = imagesData;
-  if (tag) {
-    filteredImages = imagesData.filter(image => image.tags.includes(tag));
+  try {
+    const response = await db.find({
+      selector: { isPublic: true },
+      limit: imagesPerPage * 3 // Fetch a large enough number to handle pagination
+    });
+    let imagesData = response.docs as { tags?: string[], isPublic?: boolean }[];
+
+    // Filter images by tag if a tag is provided
+    if (tag) {
+      imagesData = imagesData.filter(image => image?.tags?.includes(tag));
+    }
+
+    // Calculate pagination
+    const startIndex = (page - 1) * imagesPerPage;
+    const endIndex = startIndex + imagesPerPage;
+    const paginatedImages = imagesData.slice(startIndex, endIndex);
+
+    // Send paginated images, total count, and pagination info
+    res.json({
+      images: paginatedImages,
+      currentPage: page,
+      totalImages: imagesData.length,
+      hasMore: endIndex < imagesData.length,
+    });
+  } catch (error) {
+    console.error("Error fetching images from CouchDB:", error);
+    res.status(500).json({ message: "Error fetching images", error });
   }
-
-  // Calculate pagination
-  const startIndex = (page - 1) * imagesPerPage;
-  const endIndex = startIndex + imagesPerPage;
-
-  const paginatedImages = filteredImages.slice(startIndex, endIndex);
-
-  // Send paginated images, total count, and pagination info
-  res.json({
-    images: paginatedImages,
-    currentPage: page,
-    totalImages: filteredImages.length,
-    hasMore: endIndex < filteredImages.length,
-  });
 });
 
 export default router;
