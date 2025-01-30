@@ -1,47 +1,42 @@
 import { Router, Request, Response } from "express";
-import path from "path";
-import fs from "fs";
+import { useDatabase } from "../../Database/couchdb";
 
 const router = Router();
+const dbName = "testart"; // CouchDB database name
+const db = useDatabase(dbName);
 
-const imagesFilePath = path.resolve(__dirname, "../../../data/image_data.json");
-
-let imagesData: any[] = [];
-
-fs.readFile(imagesFilePath, "utf-8", (err, data) => {
-  if (err) {
-    console.error("Error reading images data:", err);
-  } else {
-    imagesData = JSON.parse(data);
-  }
-});
-
-const saveImages = () => {
-  fs.writeFileSync(
-    imagesFilePath,
-    JSON.stringify(imagesData, null, 2),
-    "utf-8"
-  );
-};
-
-router.get("/", (req: Request, res: Response) => {
+// Get all images or search by publicId
+router.get("/", async (req: Request, res: Response) => {
   const { search = "" } = req.query;
 
-  if (search) {
-    const image = imagesData.find((img) => img.publicId === search);
-    if (image) {
-      return res.json({ images: [image] });
-    } else {
-      return res.status(404).json({ message: "Image not found" });
-    }
-  }
+  try {
+    if (search) {
+      // Find a specific document by its publicId
+      const response = await db.find({
+        selector: { publicId: search },
+      });
 
-  res.json({ images: imagesData });
+      if (response.docs.length > 0) {
+        return res.json({ images: response.docs });
+      } else {
+        return res.status(404).json({ message: "Image not found" });
+      }
+    }
+
+    // Get all documents in the database
+    const response = await db.list({ include_docs: true });
+    const images = response.rows.map((row) => row.doc);
+    res.json({ images });
+  } catch (error) {
+    console.error("Error fetching images:", error);
+    res.status(500).json({ message: "Error fetching images", error });
+  }
 });
 
+// Update image description
 router.put(
   "/update-description/:publicId",
-  (req: Request<{ publicId: string }>, res: Response) => {
+  async (req: Request<{ publicId: string }>, res: Response) => {
     const { publicId } = req.params;
     const { description } = req.body;
 
@@ -51,26 +46,135 @@ router.put(
     }
 
     try {
-      const imageIndex = imagesData.findIndex(
-        (img) => img.publicId === publicId
-      );
+      // Find the document by its publicId
+      const response = await db.find({
+        selector: { publicId },
+      });
 
-      if (imageIndex === -1) {
+      if (response.docs.length === 0) {
         return res.status(404).json({ message: "Image not found" });
       }
 
-      imagesData[imageIndex].description = description;
-      saveImages();
+      const image = response.docs[0]; // Get the first matching document
+      const updatedImage = { ...image, description }; // Update the description
 
+      // Save the updated document to CouchDB
+      const updateResponse = await db.insert(updatedImage);
       res.json({
         message: "Description updated successfully",
-        image: imagesData[imageIndex],
+        response: updateResponse,
       });
     } catch (error) {
       console.error("Error updating description:", error);
       res
         .status(500)
         .json({ message: "Error updating image description", error });
+    }
+  }
+);
+
+// Add a new image (Upload)
+router.post("/upload", async (req: Request, res: Response) => {
+  const newImage = req.body;
+
+  if (
+    !newImage ||
+    !newImage.publicId ||
+    typeof newImage.publicId !== "string"
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Invalid image data. 'publicId' is required." });
+  }
+
+  try {
+    // Check if an image with the same publicId already exists
+    const response = await db.find({
+      selector: { publicId: newImage.publicId },
+    });
+
+    if (response.docs.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "An image with this publicId already exists." });
+    }
+
+    // Insert the new document into CouchDB
+    const uploadResponse = await db.insert(newImage);
+    res.status(201).json({
+      message: "Image uploaded successfully",
+      response: uploadResponse,
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ message: "Error uploading image", error });
+  }
+});
+
+// Delete an image (Remove)
+// router.delete(
+//   "/remove/:publicId",
+//   async (req: Request<{ publicId: string }>, res: Response) => {
+//     const { publicId } = req.params;
+
+//     try {
+//       const response = await db.find({
+//         selector: { publicId },
+//       });
+
+//       if (response.docs.length === 0) {
+//         return res.status(404).json({ message: "Image not found" });
+//       }
+
+//       const image = response.docs[0]; // Get the first matching document
+
+//       // Delete the document from CouchDB
+//       const deleteResponse = await db.destroy(image._id, image._rev);
+//       res.json({
+//         message: "Image removed successfully",
+//         response: deleteResponse,
+//       });
+//     } catch (error) {
+//       console.error("Error removing image:", error);
+//       res.status(500).json({ message: "Error removing image", error });
+//     }
+//   }
+// );
+
+// Update image visibility 
+router.put(
+  "/imageStatus/:publicId",
+  async (req: Request<{ publicId: string }>, res: Response) => {
+    const { publicId } = req.params;
+
+    try {
+      // Find the document by its publicId
+      const response = await db.find({
+        selector: { publicId },
+      });
+
+      if (response.docs.length === 0) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+
+      const image = response.docs[0] as {
+        _id: string;
+        _rev: string;
+        isPublic?: boolean;
+      };
+      image.isPublic = !image.isPublic; 
+
+      // Save the updated document to CouchDB
+      const updateResponse = await db.insert(image);
+      res.json({
+        message: "Image visibility updated successfully",
+        response: updateResponse,
+      });
+    } catch (error) {
+      console.error("Error updating visibility:", error);
+      res
+        .status(500)
+        .json({ message: "Error updating image visibility", error });
     }
   }
 );
