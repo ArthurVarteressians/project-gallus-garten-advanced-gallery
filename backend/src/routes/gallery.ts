@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response } from "express";
 import { useDatabase } from "../../Database/couchdb";
 
 const router = express.Router();
@@ -6,21 +6,21 @@ const dbName = "testart"; // CouchDB database name
 const db = useDatabase(dbName);
 
 // Route to get paginated and filtered images
-router.get('/', async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const tag = req.query.tag as string | undefined;
-  const imagesPerPage = 22; 
+  const imagesPerPage = 22;
 
   try {
     const response = await db.find({
       selector: { isPublic: true },
-      limit: imagesPerPage * 3 // Fetch a large enough number to handle pagination
+      limit: imagesPerPage * 3, // Fetch a large enough number to handle pagination
     });
-    let imagesData = response.docs as { tags?: string[], isPublic?: boolean }[];
+    let imagesData = response.docs as { tags?: string[]; isPublic?: boolean }[];
 
     // Filter images by tag if a tag is provided
     if (tag) {
-      imagesData = imagesData.filter(image => image?.tags?.includes(tag));
+      imagesData = imagesData.filter((image) => image?.tags?.includes(tag));
     }
 
     // Calculate pagination

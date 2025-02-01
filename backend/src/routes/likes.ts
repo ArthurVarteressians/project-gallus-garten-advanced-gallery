@@ -1,37 +1,30 @@
-import express, { Request, Response, Router } from 'express';
-import path from 'path';
-import fs from 'fs';
+// import express, { Request, Response, Router } from 'express';
+// import { useDatabase } from '../../Database/couchdb';
 
-// Initialize the router
-const router: Router = express.Router();
-const imagesFilePath: string = path.resolve(__dirname, '../../../data/image_data.json');
+// const router = express.Router();
+// const dbName = "tesart";
+// const db = useDatabase(dbName);
 
-// Helper function to load JSON data
-const loadImageData = (): { publicId: string; likes: number }[] => {
-  try {
-    const data = fs.readFileSync(imagesFilePath, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Error reading JSON file:', err);
-    return [];
-  }
-};
+// // Route to get likes for a specific image by publicId
+// router.get('/likes/:id', async (req: Request<{ id: string }>, res: Response) => {
+//   const { id } = req.params;
 
-// Route to get likes for a specific image by publicId
-router.get('/likes/:id', (req: Request<{ id: string }>, res: Response): void => {
-  const { id } = req.params;
+//   try {
+//     // Find the image by publicId in CouchDB
+//     const response = await db.find({
+//       selector: { publicId: id },
+//     });
 
-  // Load data from JSON file
-  const imagesData = loadImageData();
-  const image = imagesData.find(img => img.publicId === id);
+//     if (response.docs.length === 0) {
+//       return res.status(404).json({ error: 'Image not found' });
+//     }
 
-  if (!image) {
-    res.status(404).json({ error: 'Image not found' });
-    return;
-  }
+//     const image = response.docs[0] as { _id: string; _rev: string; likes?: number };
+//     res.json({ likes: image.likes ?? 0 }); // Return likes count, default to 0 if undefined
+//   } catch (error) {
+//     console.error("Error fetching image likes:", error);
+//     res.status(500).json({ error: "Error fetching image likes" });
+//   }
+// });
 
-  // Return likes count
-  res.json({ likes: image.likes });
-});
-
-export default router;
+// export default router;
